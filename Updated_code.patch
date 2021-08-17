@@ -1,0 +1,254 @@
+Index: src/main/java/com/upstox/constants/Constants.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/upstox/constants/Constants.java	(revision 5d40725819f169e817f21c7f68b147d806276ec0)
++++ src/main/java/com/upstox/constants/Constants.java	(date 1629050734948)
+@@ -18,4 +18,8 @@
+     public static final String INVALID_PIN_ENTERED = "Invalid Pin Entered!";
+     public static final String INVALID_BILLS_PROVIDED = "Invalid/Fake Bills provided.";
+     public static final String MISMATCHED_AMOUNT_WITH_BILLS = "Amount mismatched with bills.";
++    public static final String TIMESTAMP = "Timestamp :";
++    public static final String ACCOUNT_NO = "Account No: ";
++    public static final String STATEMENT_START = "-----STATEMENT-----";
++    public static final String STATEMENT_END = "---------------------";
+ }
+Index: src/test/java/TestCreditState.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/java/TestCreditState.java	(revision 5d40725819f169e817f21c7f68b147d806276ec0)
++++ src/test/java/TestCreditState.java	(date 1629050648041)
+@@ -1,6 +1,7 @@
+ import com.upstox.enums.CardStatus;
+ import com.upstox.enums.TransactionMenu;
+ import com.upstox.model.*;
++import com.upstox.service.AtmService;
+ import com.upstox.service.impl.AtmServiceImpl;
+ import com.upstox.state.impl.*;
+ import org.junit.jupiter.api.BeforeEach;
+@@ -16,7 +17,7 @@
+ 
+ @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+ public class TestCreditState {
+-    private AtmServiceImpl atmServiceImpl;
++    private AtmService atmServiceImpl;
+     private Card card;
+ 
+     @BeforeEach
+Index: src/main/java/com/upstox/service/impl/AtmServiceImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/upstox/service/impl/AtmServiceImpl.java	(revision 5d40725819f169e817f21c7f68b147d806276ec0)
++++ src/main/java/com/upstox/service/impl/AtmServiceImpl.java	(date 1629050640225)
+@@ -56,20 +56,22 @@
+     }
+ 
+     // For Checking & Setting Cash in M/C
++    @Override
+     public double getAvailableCash() {
+         return availableCash;
+     }
+-
++    @Override
+     public void setAvailableCash(double availableCash) {
+         this.availableCash = availableCash;
+     }
+ 
+ 
+     // For Checking & Setting State of M/C
++    @Override
+     public ATMState getState() {
+         return state;
+     }
+-
++    @Override
+     public void setState(ATMState state) {
+         this.state = state;
+     }
+@@ -134,6 +136,11 @@
+         this.state.creditAmount(amount, billList);
+     }
+ 
++    @Override
++    public void printStatement() {
++        this.state.printStatement();
++    }
++
+     @Override
+     public void setOutOfService() {
+         this.state.outOfService();
+Index: src/main/java/com/upstox/service/AtmService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/upstox/service/AtmService.java	(revision 5d40725819f169e817f21c7f68b147d806276ec0)
++++ src/main/java/com/upstox/service/AtmService.java	(date 1629050640228)
+@@ -3,12 +3,23 @@
+ import com.upstox.enums.TransactionMenu;
+ import com.upstox.model.Bill;
+ import com.upstox.model.Card;
++import com.upstox.state.ATMState;
+ 
+ import java.util.List;
+ 
+ public interface AtmService {
+     void init();
+ 
++    // For Checking & Setting Cash in M/C
++    double getAvailableCash();
++
++    void setAvailableCash(double availableCash);
++
++    // For Checking & Setting State of M/C
++    ATMState getState();
++
++    void setState(ATMState state);
++
+     // Action methods
+     void insertCard(Card card);
+ 
+@@ -22,5 +33,7 @@
+ 
+     void credit(double amount, List<Bill> billList);
+ 
++    void printStatement();
++
+     void setOutOfService();
+ }
+Index: src/test/java/TestUserCard.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/java/TestUserCard.java	(revision 5d40725819f169e817f21c7f68b147d806276ec0)
++++ src/test/java/TestUserCard.java	(date 1629050656950)
+@@ -1,4 +1,5 @@
+ import com.upstox.enums.CardStatus;
++import com.upstox.service.AtmService;
+ import com.upstox.service.impl.AtmServiceImpl;
+ import com.upstox.model.Card;
+ import com.upstox.state.impl.ErrorState;
+@@ -13,7 +14,7 @@
+ import static org.junit.jupiter.api.Assertions.assertTrue;
+ 
+ public class TestUserCard {
+-    private AtmServiceImpl atmServiceImpl;
++    private AtmService atmServiceImpl;
+     private Card card;
+ 
+     @BeforeEach
+Index: src/test/java/TestDebitState.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/java/TestDebitState.java	(revision 5d40725819f169e817f21c7f68b147d806276ec0)
++++ src/test/java/TestDebitState.java	(date 1629050593476)
+@@ -1,6 +1,7 @@
+ import com.upstox.enums.CardStatus;
+ import com.upstox.enums.TransactionMenu;
+ import com.upstox.model.*;
++import com.upstox.service.AtmService;
+ import com.upstox.service.impl.AtmServiceImpl;
+ import com.upstox.state.impl.*;
+ import org.junit.jupiter.api.*;
+@@ -12,7 +13,7 @@
+ 
+ @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+ public class TestDebitState {
+-    private AtmServiceImpl atmServiceImpl;
++    private AtmService atmServiceImpl;
+     private Card card;
+ 
+     @BeforeEach
+@@ -42,7 +43,6 @@
+         assertTrue(this.atmServiceImpl.getState() instanceof ExitState);
+     }
+ 
+-
+     @Test
+     @DisplayName("Test to print balance.")
+     public void displayBalance() {
+@@ -76,6 +76,22 @@
+         assertTrue(this.atmServiceImpl.getState() instanceof  ExitState);
+     }
+ 
++    @Test
++    @DisplayName("Test to print a valid debit card transaction statement")
++    public void printStatement() {
++        assertTrue(this.atmServiceImpl.getState() instanceof ReadyState);
++        this.atmServiceImpl.insertCard(card);
++        assertTrue(this.atmServiceImpl.getState() instanceof EnterPINState);
++        this.atmServiceImpl.authenticatePin("1234");
++        assertTrue(this.atmServiceImpl.getState() instanceof TransactionMenuState);
++        this.atmServiceImpl.selectOption(TransactionMenu.DEBIT);
++        assertTrue(this.atmServiceImpl.getState() instanceof DebitState);
++        this.atmServiceImpl.withdraw(100);
++        assertTrue(this.atmServiceImpl.getState() instanceof DisplayBalanceState);
++        this.atmServiceImpl.printStatement();
++        assertTrue(this.atmServiceImpl.getState() instanceof DisplayBalanceState);
++    }
++
+     @Test
+     @DisplayName("Test to not allow a transaction if ATM doesn't have sufficient funds.")
+     public void insufficientBalanceInATM() {
+Index: src/main/java/com/upstox/state/ATMState.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/upstox/state/ATMState.java	(revision 5d40725819f169e817f21c7f68b147d806276ec0)
++++ src/main/java/com/upstox/state/ATMState.java	(date 1629049835203)
+@@ -48,6 +48,10 @@
+         throw new IllegalStateException();
+     }
+ 
++    public void printStatement() {
++        throw new IllegalStateException();
++    }
++
+     public void outOfService() {
+         this.atmServiceImpl.setState(new OutOfServiceState(this.atmServiceImpl));
+     }
+Index: src/main/java/com/upstox/state/impl/DisplayBalanceState.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/com/upstox/state/impl/DisplayBalanceState.java	(revision 5d40725819f169e817f21c7f68b147d806276ec0)
++++ src/main/java/com/upstox/state/impl/DisplayBalanceState.java	(date 1629050743345)
+@@ -4,17 +4,27 @@
+ import com.upstox.service.impl.AtmServiceImpl;
+ import com.upstox.state.ATMState;
+ 
++import java.time.LocalDate;
++import java.time.LocalDateTime;
+ import java.util.logging.Logger;
+ 
+ public class DisplayBalanceState extends ATMState {
+     private static final Logger logger = Logger.getLogger(DisplayBalanceState.class.toString());
+ 
+-
+     public DisplayBalanceState(AtmServiceImpl atmServiceImpl) {
+         super(atmServiceImpl);
+         logger.info(Constants.YOUR_CURRENT_BALANCE + atmServiceImpl.getSession().getAccount().getBalance());
+     }
+ 
++    @Override
++    public void printStatement() {
++        logger.info(Constants.STATEMENT_START);
++        logger.info(Constants.TIMESTAMP + LocalDateTime.now());
++        logger.info(Constants.ACCOUNT_NO + atmServiceImpl.getSession().getAccount().getAccountNumber());
++        logger.info(Constants.YOUR_CURRENT_BALANCE + atmServiceImpl.getSession().getAccount().getBalance());
++        logger.info(Constants.STATEMENT_END);
++    }
++
+     @Override
+     public void exit() {
+         this.atmServiceImpl.setState(new ExitState(this.atmServiceImpl));
